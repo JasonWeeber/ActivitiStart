@@ -48,11 +48,18 @@ public class HelloWord {
 	public void deployProcess() {
 		// 通过文件布署流程
 		repositoryService.createDeployment()
-				.addClasspathResource("diagrams/ExplorerProcess.bpmn").deploy();
+				.addClasspathResource("diagrams/CancelProcessInst.bpmn")
+				.deploy();
 		// 验证已布署流程定义
-		ProcessDefinition processDefinition = repositoryService
-				.createProcessDefinitionQuery().singleResult();
-		assert "process_pool1".equals(processDefinition.getKey());
+		List<ProcessDefinition> processDefinitionList = repositoryService
+				.createProcessDefinitionQuery()
+				.processDefinitionKey("cancelProcess_1").list();
+		for (ProcessDefinition processDefinition : processDefinitionList) {
+			assert "cancelProcess_1".equals(processDefinition.getKey());
+			System.out.println("version:" + processDefinition.getVersion()
+					+ "\tname:" + processDefinition.getName());
+		}
+		System.out.println("成功");
 	}
 
 	/**
@@ -61,13 +68,53 @@ public class HelloWord {
 	@Test
 	public void initProcess() {
 		ProcessInstance processInstance = runtimeService
-				.startProcessInstanceByKey("process_pool1");
+				.startProcessInstanceByKey("cancelProcess_1");
 		// 判断实例是否启动
 		assert processInstance != null;
 		// 输出流程实例的id与流程定义的id
 		System.out.println("流程实例的id:" + processInstance.getProcessInstanceId()
 				+ ",流程定义的id:" + processInstance.getProcessDefinitionId());
 		System.out.println("结束");
+	}
+
+	@Test
+	public void queryTestUserTask() {
+		List<Task> taskList = taskService.createTaskQuery()
+				.taskCandidateUser("testUser").list();
+		assert taskList != null && taskList.size() > 0;
+		System.out.println("testUser有任务待处理");
+	}
+
+	/**
+	 * 查询运行中的流程实例
+	 */
+	@Test
+	public void queryProcessInstance() {
+		List<ProcessInstance> processInstanceList = runtimeService
+				.createProcessInstanceQuery().list();
+		if (processInstanceList == null || processInstanceList.size() == 0) {
+			System.out.println("没有运行中的实例");
+		} else {
+			System.out.println("运行中的流程实例:" + processInstanceList.size());
+		}
+	}
+
+	@Test
+	public void queryTestLeader() {
+		List<Task> taskList = taskService.createTaskQuery()
+				.taskCandidateUser("testLeader").list();
+		assert taskList != null && taskList.size() > 0;
+		System.out.println("testLeader有任务待处理");
+	}
+
+	@Test
+	public void completeTestUser() {
+		List<Task> taskList = taskService.createTaskQuery()
+				.taskCandidateUser("testUser").list();
+		for (Task task : taskList) {
+			taskService.complete(task.getId());
+		}
+		System.out.println("testUser结束任务");
 	}
 
 	/**
@@ -174,6 +221,10 @@ public class HelloWord {
 			// 完成任务
 			taskService.complete(task.getId());
 		}
+	}
+
+	public void destoryInit() {
+
 	}
 
 }
